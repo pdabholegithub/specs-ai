@@ -6,7 +6,7 @@ export default function Dashboard() {
   const [story, setStory] = useState("");
   const [language, setLanguage] = useState("TypeScript");
   const [gherkin, setGherkin] = useState("");
-  const [playwright, setPlaywright] = useState("");
+  const [playwright, setPlaywright] = useState<Record<string, string> | null>(null);
   const [loading, setLoading] = useState(false);
 
   const handleGenerate = async () => {
@@ -20,7 +20,7 @@ export default function Dashboard() {
 
     setLoading(true);
     setGherkin("");
-    setPlaywright("");
+    setPlaywright(null);
 
     try {
       const res = await fetch("/api/generate", {
