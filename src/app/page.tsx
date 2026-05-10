@@ -1,3 +1,4 @@
+import Link from "next/link";
 import Image from "next/image";
 
 export default function Home() {
@@ -20,9 +21,9 @@ export default function Home() {
           <a href="#how-it-works" className="hover:text-white transition-colors">How it Works</a>
           <a href="#pricing" className="hover:text-white transition-colors">Pricing</a>
         </div>
-        <button className="px-5 py-2.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/10 text-sm font-medium transition-all backdrop-blur-md">
-          Sign In
-        </button>
+        <Link href="/dashboard" className="px-5 py-2.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/10 text-sm font-medium transition-all backdrop-blur-md">
+          Open Dashboard
+        </Link>
       </nav>
 
       {/* Hero Section */}
@@ -46,20 +47,14 @@ export default function Home() {
           SpecsAI bridges Jira, GitHub, and Playwright. Turn PM user stories into live code specs and automated tests instantly. The single source of truth your team actually uses.
         </p>
         
-        <form className="flex flex-col sm:flex-row gap-3 w-full max-w-md mb-16">
-          <input 
-            type="email" 
-            placeholder="Enter your email address" 
-            className="flex-1 bg-white/5 border border-white/10 rounded-xl px-5 py-4 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-transparent transition-all backdrop-blur-sm"
-            required
-          />
-          <button 
-            type="submit"
-            className="px-8 py-4 rounded-xl bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-semibold shadow-[0_0_40px_rgba(168,85,247,0.4)] transition-all hover:scale-105 active:scale-95"
+        <div className="flex flex-col sm:flex-row gap-3 w-full max-w-md mb-16 justify-center">
+          <Link 
+            href="/dashboard"
+            className="w-full px-8 py-4 rounded-xl bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-semibold shadow-[0_0_40px_rgba(168,85,247,0.4)] transition-all hover:scale-105 active:scale-95 text-center text-lg tracking-wide"
           >
-            Join Waitlist
-          </button>
-        </form>
+            Launch Interactive Demo
+          </Link>
+        </div>
 
         {/* Dashboard Mockup Frame */}
         <div className="w-full relative mt-10 perspective-[2000px]">
