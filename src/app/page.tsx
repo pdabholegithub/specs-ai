@@ -74,7 +74,7 @@ export default function Home() {
           { title: "Playwright Automation", desc: "Generate typescript test skeletons mapped directly to PM requirements." },
           { title: "Living Feature Map", desc: "See exactly what is coded, tested, and deployed in one single view." }
         ].map((feature, i) => (
-          <div key={i} className="p-8 rounded-2xl bg-white/[0.02] border border-white/[0.05] hover:bg-white/[0.04] transition-colors group">
+          <div key={i} className="p-8 rounded-2xl bg-white/[0.02] border border-white/[0.05] hover:bg-white/[0.04] transition-all group">
             <div className="w-12 h-12 rounded-full bg-purple-500/10 flex items-center justify-center text-purple-400 mb-6 group-hover:scale-110 transition-transform">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
             </div>
@@ -82,6 +82,116 @@ export default function Home() {
             <p className="text-gray-400 leading-relaxed">{feature.desc}</p>
           </div>
         ))}
+      </section>
+
+      {/* How it Works Section */}
+      <section id="how-it-works" className="relative z-10 max-w-7xl mx-auto px-8 py-32 border-t border-white/5">
+        <div className="text-center mb-16">
+          <h2 className="text-3xl md:text-5xl font-extrabold tracking-tight mb-4">
+            Three Steps to Unified Testing
+          </h2>
+          <p className="text-gray-400 max-w-lg mx-auto">
+            From raw product ideas to secure, auto-healed test code execution.
+          </p>
+        </div>
+
+        <div className="grid md:grid-cols-3 gap-8">
+          {[
+            {
+              step: "01",
+              title: "Draft User Story",
+              desc: "Paste your raw feature requirements or product ideas directly into the main interactive dashboard panel."
+            },
+            {
+              step: "02",
+              title: "Sync & Compile",
+              desc: "Watch the Gemini 2.5 Flash architecture compile Gherkin scenarios, automated test skeletons, and manual TestRail cases in real-time."
+            },
+            {
+              step: "03",
+              title: "Heal in Your Editor",
+              desc: "Integrate the MCP server locally. Let Cursor run your tests, catch any failures, and auto-heal your files instantly on your machine."
+            }
+          ].map((item, i) => (
+            <div key={i} className="p-8 rounded-2xl bg-white/[0.01] border border-white/5 relative overflow-hidden group">
+              <div className="text-6xl font-black text-white/[0.03] absolute top-4 right-4 transition-colors group-hover:text-purple-500/10">
+                {item.step}
+              </div>
+              <h3 className="text-xl font-bold mb-4 relative z-10">{item.title}</h3>
+              <p className="text-gray-400 leading-relaxed relative z-10">{item.desc}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Pricing Section */}
+      <section id="pricing" className="relative z-10 max-w-7xl mx-auto px-8 py-32 border-t border-white/5">
+        <div className="text-center mb-16">
+          <h2 className="text-3xl md:text-5xl font-extrabold tracking-tight mb-4">
+            Simple, Developer-First Pricing
+          </h2>
+          <p className="text-gray-400 max-w-lg mx-auto">
+            Get started for free or supercharge your workflow with our local MCP self-healing integration.
+          </p>
+        </div>
+
+        <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto items-stretch">
+          {/* Free Tier */}
+          <div className="p-8 rounded-2xl bg-white/[0.01] border border-white/5 flex flex-col justify-between">
+            <div>
+              <h3 className="text-lg font-bold text-gray-400 mb-2">Hobby</h3>
+              <div className="text-4xl font-extrabold mb-6">$0<span className="text-sm font-normal text-gray-500">/mo</span></div>
+              <ul className="space-y-3.5 text-sm text-gray-400 mb-8">
+                <li className="flex items-center gap-2">🟢 20 Dynamic Generations</li>
+                <li className="flex items-center gap-2">🟢 Basic Gherkin Outputs</li>
+                <li className="flex items-center gap-2">🟢 Playwright Test Skeletons</li>
+                <li className="flex items-center gap-2">🔴 Local MCP Debug Server</li>
+              </ul>
+            </div>
+            <Link href="/dashboard" className="w-full py-3 rounded-xl bg-white/5 hover:bg-white/10 text-center font-medium border border-white/10 transition-colors text-sm">
+              Get Started Free
+            </Link>
+          </div>
+
+          {/* Pro Tier */}
+          <div className="p-8 rounded-2xl bg-gradient-to-b from-purple-500/10 to-blue-500/5 border border-purple-500/30 flex flex-col justify-between relative shadow-[0_0_50px_rgba(168,85,247,0.15)] transform md:scale-105">
+            <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-gradient-to-r from-purple-500 to-blue-500 text-xs font-bold uppercase tracking-wider">
+              Most Popular
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-white mb-2">Professional</h3>
+              <div className="text-4xl font-extrabold mb-6">$49<span className="text-sm font-normal text-gray-400">/mo</span></div>
+              <ul className="space-y-3.5 text-sm text-gray-300 mb-8">
+                <li className="flex items-center gap-2">🟢 Unlimited Dynamic Generations</li>
+                <li className="flex items-center gap-2">🟢 Three-Language Automation Code</li>
+                <li className="flex items-center gap-2">🟢 Advanced Manual TestRail Cases</li>
+                <li className="flex items-center gap-2">🟢 Local MCP Debug & Run Server</li>
+                <li className="flex items-center gap-2">🟢 Full Real-time Self-Healing Core</li>
+              </ul>
+            </div>
+            <Link href="/dashboard" className="w-full py-3 rounded-xl bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-center font-semibold text-sm shadow-lg shadow-purple-500/20 transition-all">
+              Go Professional
+            </Link>
+          </div>
+
+          {/* Enterprise Tier */}
+          <div className="p-8 rounded-2xl bg-white/[0.01] border border-white/5 flex flex-col justify-between">
+            <div>
+              <h3 className="text-lg font-bold text-gray-400 mb-2">Enterprise</h3>
+              <div className="text-4xl font-extrabold mb-6">Custom</div>
+              <ul className="space-y-3.5 text-sm text-gray-400 mb-8 font-medium">
+                <li className="flex items-center gap-2">🟢 Self-Hosted LLM Gateway</li>
+                <li className="flex items-center gap-2">🟢 Custom SDLC Workflow Hooks</li>
+                <li className="flex items-center gap-2">🟢 Private Cloud deployments</li>
+                <li className="flex items-center gap-2">🟢 SSO / SAML Protection</li>
+                <li className="flex items-center gap-2">🟢 24/7 Priority SLA Support</li>
+              </ul>
+            </div>
+            <a href="mailto:support@specsai.co" className="w-full py-3 rounded-xl bg-white/5 hover:bg-white/10 text-center font-medium border border-white/10 transition-colors text-sm">
+              Contact Sales
+            </a>
+          </div>
+        </div>
       </section>
     </div>
   );

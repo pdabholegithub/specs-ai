@@ -2,69 +2,168 @@ import { google } from '@ai-sdk/google';
 import { generateText } from 'ai';
 import { NextResponse } from 'next/server';
 
-export async function POST(req: Request) {
+function extractAndParseJson(text: string) {
+  let cleanText = text.trim();
+  
+  // Strip starting ```json or ```
+  cleanText = cleanText.replace(/^```json\s*/i, '').replace(/^```\s*/, '');
+  // Strip ending ```
+  cleanText = cleanText.replace(/\s*```$/, '');
+  cleanText = cleanText.trim();
+
   try {
-    const { story, language = "TypeScript" } = await req.json();
+    return JSON.parse(cleanText);
+  } catch (err) {
+    // Robust search: find the very first '{' and match brackets to find the correct outer closing '}'
+    const firstBrace = cleanText.indexOf('{');
+    if (firstBrace !== -1) {
+      let braceCount = 0;
+      let inString = false;
+      let escapeNext = false;
+      
+      for (let i = firstBrace; i < cleanText.length; i++) {
+        const char = cleanText[i];
+        
+        if (escapeNext) {
+          escapeNext = false;
+          continue;
+        }
+        
+        if (char === '\\') {
+          escapeNext = true;
+          continue;
+        }
+        
+        if (char === '"') {
+          inString = !inString;
+          continue;
+        }
+        
+        if (!inString) {
+          if (char === '{') {
+            braceCount++;
+          } else if (char === '}') {
+            braceCount--;
+            if (braceCount === 0) {
+              const jsonCandidate = cleanText.substring(firstBrace, i + 1);
+              try {
+                return JSON.parse(jsonCandidate);
+              } catch (innerErr) {
+                // Ignore parsing errors inside candidates and continue matching outer braces
+              }
+            }
+          }
+        }
+      }
+    }
+    throw err;
+  }
+}
+
+// IP rate limit cache: in-memory maps IP to reset time and counter
+const ipRateLimitMap = new Map<string, { count: number; resetTime: number }>();
+
+const RATE_LIMIT_COUNT = 5; // max requests per window
+const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour in ms
+
+export async function POST(req: Request) {
+  // Capture client IP address securely
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0].trim() || '127.0.0.1';
+  const timestamp = new Date().toISOString();
+
+  try {
+    const { story, accessCode } = await req.json();
+
+    // ----------------------------------------------------
+    // Layer 1: Access Passcode Protection
+    // ----------------------------------------------------
+    const requiredCode = process.env.SPECS_ACCESS_CODE || 'DemoSpecs2026';
+    if (!accessCode || accessCode.trim() !== requiredCode.trim()) {
+      console.warn(`[SECURITY WARN] [${timestamp}] Unauthorized API access attempt. IP: ${ip}, PromptLength: ${story?.length || 0}`);
+      return NextResponse.json(
+        { error: 'Unauthorized: Invalid or missing access passcode. Please input the correct passcode in the settings panel to proceed.' },
+        { status: 401 }
+      );
+    }
+
+    // ----------------------------------------------------
+    // Layer 2: IP-Based Rate Limiting
+    // ----------------------------------------------------
+    const now = Date.now();
+    let limitData = ipRateLimitMap.get(ip);
+
+    if (!limitData || now > limitData.resetTime) {
+      // Initialize or reset limit window
+      limitData = { count: 0, resetTime: now + RATE_LIMIT_WINDOW_MS };
+    }
+
+    if (limitData.count >= RATE_LIMIT_COUNT) {
+      const minutesLeft = Math.ceil((limitData.resetTime - now) / 1000 / 60);
+      console.warn(`[SECURITY WARN] [${timestamp}] Rate limit exceeded for IP: ${ip}. Blocked further Gemini token consumption.`);
+      return NextResponse.json(
+        { error: `Too Many Requests: Rate limit exceeded for this IP. Please try again in ${minutesLeft} minutes.` },
+        { status: 429 }
+      );
+    }
+
+    // Increment request count
+    limitData.count++;
+    ipRateLimitMap.set(ip, limitData);
+
+    // ----------------------------------------------------
+    // Layer 3: Security & Usage Auditing Logs
+    // ----------------------------------------------------
+    console.log(`[AUDIT LOG] [${timestamp}] User request received. IP: ${ip}, PromptLength: ${story?.length || 0}, RequestsThisHour: ${limitData.count}/${RATE_LIMIT_COUNT}`);
+
+    if (!story || story.trim().length < 15) {
+      return NextResponse.json(
+        { error: 'Invalid Input: Please provide a valid requirement story description (minimum 15 characters).' },
+        { status: 400 }
+      );
+    }
 
     const prompt = `
-      You are an elite QA Automation Architect.
-      Convert the following user story into:
-      1. Gherkin Acceptance Criteria.
-      2. A robust automation test skeleton written in ${language}.
+      You are an elite QA Automation Architect and Lead SDET.
+      Analyze the following User Story and convert it into a comprehensive acceptance test suite:
+      1. Gherkin Acceptance Criteria: High-quality, industry-standard feature scenarios.
+      2. Automation test skeletons for Playwright/Selenium in three languages:
+         - TypeScript (Playwright with standard assertions)
+         - Python (Playwright with pytest-playwright syntax)
+         - Java (Selenium WebDriver with TestNG assertions)
+      3. Manual Test Cases (TestRail format): Detailed step-by-step test cases containing:
+         - Section Name / Title
+         - Pre-conditions
+         - Steps with Action and Expected Result
 
       User Story: "${story}"
 
-      Return a raw JSON object with exactly two string keys: "gherkin" and "playwright". Do not wrap the JSON in markdown blocks like \`\`\`json. Just return the raw parseable JSON string.
+      You MUST return a JSON object with exactly these keys:
+      - "gherkin": (string) The full Gherkin feature text.
+      - "playwright": (object) An object containing exactly three keys:
+         - "TypeScript": (string) The Playwright TypeScript code.
+         - "Python": (string) The Playwright Python code.
+         - "Java": (string) The Selenium Java code.
+      - "testrail": (string) The manual TestRail formatted test cases.
+
+      CRITICAL JSON FORMATTING RULES:
+      1. Do not wrap the JSON in markdown blocks like \`\`\`json. Just return the raw parseable JSON string.
+      2. All keys and string values must use double quotes.
+      3. IMPORTANT: Any nested double quotes inside code snippets must be properly escaped (e.g. use \\" for nested quotes inside the JSON string properties, or use single quotes ' inside the code snippets to completely avoid quote conflicts).
+      4. Do not include trailing commas in arrays or objects.
     `;
 
-    let parsed;
-    try {
-      const { text } = await generateText({
-        model: google('gemini-1.5-pro'),
-        prompt: prompt,
-      });
+    const { text } = await generateText({
+      model: google('gemini-2.5-flash'),
+      prompt: prompt,
+    });
 
-      const cleanJsonString = text.replace(/```json/g, '').replace(/```/g, '').trim();
-      parsed = JSON.parse(cleanJsonString);
-    } catch (apiError) {
-      console.error("AI API Error Details:", apiError);
-      console.warn("AI API failed. Bypassing Google restrictions with intelligent MVP mock.");
-      
-      const input = story.toLowerCase();
-      
-      const tsCode = `import { test, expect } from '@playwright/test';\n\ntest.describe('Shopping Cart Management', () => {\n  test('Add item to cart', async ({ page }) => {\n    await page.goto('/product/123');\n    await expect(page.locator('.stock-status')).toHaveText('In Stock');\n    await page.click('button:has-text(\"Add to Cart\")');\n    await expect(page.locator('.cart-count')).toHaveText('1');\n  });\n});`;
-      const pyCode = `from playwright.sync_api import Page, expect\nimport pytest\n\n@pytest.mark.describe("Shopping Cart Management")\ndef test_add_item_to_cart(page: Page):\n    page.goto("/product/123")\n    expect(page.locator(".stock-status")).to_have_text("In Stock")\n    page.click("button:has-text('Add to Cart')")\n    expect(page.locator(".cart-count")).to_have_text("1")`;
-      const javaCode = `import org.openqa.selenium.By;\nimport org.openqa.selenium.WebDriver;\nimport org.testng.Assert;\nimport org.testng.annotations.Test;\n\npublic class ShoppingCartTest {\n    WebDriver driver;\n\n    @Test\n    public void addItemToCart() {\n        driver.get("https://example.com/product/123");\n        Assert.assertEquals(driver.findElement(By.className("stock-status")).getText(), "In Stock");\n        driver.findElement(By.xpath("//button[text()='Add to Cart']")).click();\n        Assert.assertEquals(driver.findElement(By.className("cart-count")).getText(), "1");\n    }\n}`;
-      
-      const genericTsCode = `import { test, expect } from '@playwright/test';\n\ntest.describe('Dynamic User Flow', () => {\n  test('Successful Execution', async ({ page }) => {\n    await page.goto('/dashboard');\n    await page.fill('.input-primary', 'test-data');\n    await page.click('button[type=\"submit\"]');\n    await expect(page.locator('.success-toast')).toBeVisible();\n  });\n});`;
-      const genericPyCode = `from playwright.sync_api import Page, expect\n\ndef test_successful_execution(page: Page):\n    page.goto('/dashboard')\n    page.fill('.input-primary', 'test-data')\n    page.click('button[type=\"submit\"]')\n    expect(page.locator('.success-toast')).to_be_visible()`;
-      const genericJavaCode = `import org.openqa.selenium.By;\nimport org.openqa.selenium.WebDriver;\nimport org.testng.Assert;\nimport org.testng.annotations.Test;\n\npublic class DynamicFlowTest {\n    WebDriver driver;\n\n    @Test\n    public void successfulExecution() {\n        driver.get("https://example.com/dashboard");\n        driver.findElement(By.className("input-primary")).sendKeys("test-data");\n        driver.findElement(By.xpath("//button[@type='submit']")).click();\n        Assert.assertTrue(driver.findElement(By.className("success-toast")).isDisplayed());\n    }\n}`;
-
-      const csvTsCode = `import { test, expect } from '@playwright/test';\n\ntest.describe('Enterprise Bulk Invite', () => {\n  test('Reject invalid CSV file', async ({ page }) => {\n    await page.goto('/admin/workspace');\n    await page.setInputFiles('input[type="file"]', 'invalid_file.txt');\n    await page.click('button:has-text("Upload")');\n    await expect(page.locator('.toast-error')).toContainText('Invalid file format');\n  });\n\n  test('Process valid CSV and skip duplicates', async ({ page }) => {\n    await page.setInputFiles('input[type="file"]', 'valid_users.csv');\n    await page.click('button:has-text("Upload")');\n    await expect(page.locator('table.pending-invites tr')).toHaveCount(5);\n    await expect(page.locator('.badge-sent')).toBeVisible();\n  });\n\n  test('RBAC: Non-admin gets 403', async ({ page }) => {\n    // Login as standard user\n    await page.goto('/admin/workspace');\n    await expect(page).toHaveURL('/403-access-denied');\n  });\n});`;
-      const csvPyCode = `from playwright.sync_api import Page, expect\nimport pytest\n\n@pytest.mark.describe("Enterprise Bulk Invite")\ndef test_reject_invalid_csv(page: Page):\n    page.goto("/admin/workspace")\n    page.set_input_files('input[type="file"]', 'invalid_file.txt')\n    page.click('button:has-text("Upload")')\n    expect(page.locator(".toast-error")).to_contain_text("Invalid file format")\n\ndef test_rbac_non_admin_403(page: Page):\n    page.goto("/admin/workspace")\n    expect(page).to_have_url("/403-access-denied")`;
-      const csvJavaCode = `import org.openqa.selenium.By;\nimport org.openqa.selenium.WebDriver;\nimport org.testng.Assert;\nimport org.testng.annotations.Test;\n\npublic class BulkInviteTest {\n    WebDriver driver;\n\n    @Test\n    public void rejectInvalidCSV() {\n        driver.get("https://example.com/admin/workspace");\n        driver.findElement(By.cssSelector("input[type='file']")).sendKeys("C:\\\\invalid_file.txt");\n        driver.findElement(By.xpath("//button[text()='Upload']")).click();\n        Assert.assertTrue(driver.findElement(By.className("toast-error")).getText().contains("Invalid file"));\n    }\n}`;
-
-      if (input.includes('cart') || input.includes('purchase')) {
-        parsed = {
-          gherkin: "Feature: Shopping Cart Management\n\n  Scenario: Add item to cart\n    Given the user is on the product details page\n    When the item is in stock\n    And they click the 'Add to Cart' button\n    Then the item should be added to their cart\n    And the cart counter should increase by 1",
-          playwright: { TypeScript: tsCode, Python: pyCode, Java: javaCode }
-        };
-      } else if (input.includes('csv') || input.includes('invite') || input.includes('rbac')) {
-        parsed = {
-          gherkin: "Feature: Enterprise Bulk User Onboarding\n\n  Scenario: Invalid File Upload Rejected\n    Given the Enterprise Admin is on the Bulk Invite page\n    When they upload a non-CSV file\n    Then the system should display an error toast\n\n  Scenario: Duplicate Emails Skipped\n    Given the Admin uploads a valid CSV\n    When the CSV contains an existing workspace email\n    Then the system should skip the duplicate\n    And send invites to the remaining users\n    And update the Pending Invites table with 'Sent' status\n\n  Scenario: RBAC Enforcement\n    Given a standard non-admin user is logged in\n    When they attempt to navigate to the Bulk Invite page\n    Then they should be redirected to the 403 Access Denied page",
-          playwright: { TypeScript: csvTsCode, Python: csvPyCode, Java: csvJavaCode }
-        };
-      } else {
-        parsed = {
-          gherkin: "Feature: Dynamic User Flow\n\n  Scenario: Successful Execution of User Story\n    Given the user initiates the requested action\n    When they provide the necessary valid inputs\n    And they submit the form\n    Then the system should process the request successfully",
-          playwright: { TypeScript: genericTsCode, Python: genericPyCode, Java: genericJavaCode }
-        };
-      }
-    }
-    
+    const parsed = extractAndParseJson(text);
     return NextResponse.json(parsed);
-  } catch (error) {
-    console.error('Generation Error:', error);
-    return NextResponse.json({ error: 'Failed to generate specs.' }, { status: 500 });
+  } catch (error: any) {
+    console.error(`[AUDIT LOG] [${timestamp}] Generation Error for IP ${ip}:`, error);
+    return NextResponse.json(
+      { error: error.message || 'Failed to generate specs.' },
+      { status: 500 }
+    );
   }
 }
