@@ -11,6 +11,7 @@
   "dependencies": {
     "@ai-sdk/google": "^3.0.71",
     "@modelcontextprotocol/sdk": "^1.29.0",
+    "@octokit/rest": "^22.0.1",
     "ai": "^6.0.177",
     "next": "14.2.15",
     "react": "^18.3.1",

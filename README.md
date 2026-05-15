@@ -1,36 +1,70 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🚀 SpecsAI (SyncFlow)
+### The World's First Autonomous Zero-Touch SDLC & Self-Healing QA Engine.
 
-## Getting Started
+**SpecsAI** (SyncFlow) is an advanced AI-driven platform that bridges the gap between Product Requirements and Production-Ready Code. It transforms the traditionally manual SDLC into a fully autonomous, self-correcting loop using **Google Gemini 2.5 Flash** and the **Model Context Protocol (MCP)**.
 
-First, run the development server:
+---
 
+## 🌟 Key Pillars
+
+### 1. 🤖 Autonomous SDLC Sync
+*   **Jira Webhooks**: Automatically listen for "Ready for QA" status and generate specs.
+*   **GitHub Committer**: Autonomously branch, commit, and open PRs for generated test suites.
+*   **TestRail Integration**: Automatically initialize manual test logs for compliance.
+
+### 2. 🛡️ CI/CD Self-Healing Core
+*   **Zero-Touch Recovery**: When tests fail in GitHub Actions, SpecsAI diagnoses the failure, patches the locators/code, and commits the fix back to the branch—all without human intervention.
+
+### 3. 🔌 MCP Intelligence
+*   **IDE Integration**: A standalone MCP server that brings Staff-level QA intelligence directly into your local IDE (Cursor/VS Code).
+*   **Local Execution**: Run, debug, and heal tests locally before they ever reach the cloud.
+
+---
+
+## 🛠️ Technology Stack
+*   **Core**: Next.js 15, TypeScript, TailwindCSS
+*   **AI Engine**: Google Gemini 2.5 Flash
+*   **Protocols**: Model Context Protocol (MCP)
+*   **Integrations**: GitHub Octokit, Jira REST API, Playwright, Selenium
+
+---
+
+## 🚀 Quick Start
+
+### 1. Configure Environment
+Create a `.env.local` file with the following:
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+GOOGLE_GENERATIVE_AI_API_KEY=your_key
+SPECS_ACCESS_CODE=DemoSpecs2026
+GITHUB_TOKEN=your_pat
+JIRA_DOMAIN=your-domain.atlassian.net
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 2. Run Locally
+```bash
+npm install
+npm run dev
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 3. Start MCP Server
+```bash
+npx tsx mcp-server.ts
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+---
 
-## Learn More
+## 📐 Architecture
+SpecsAI operates on a "Living Blueprint" philosophy, ensuring that code is always a direct, validated reflection of requirements.
 
-To learn more about Next.js, take a look at the following resources:
+```mermaid
+graph LR
+    J[Jira Story] --> S[SpecsAI Engine]
+    S --> G[GitHub PR]
+    G --> C[CI/CD Workflow]
+    C -- Failure --> H[AI Healing]
+    H --> G
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+*Built with ❤️ for the future of Autonomous Engineering.*

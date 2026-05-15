@@ -11,6 +11,8 @@ import * as path from 'path';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 
+import { Octokit } from "@octokit/rest";
+
 const execPromise = promisify(exec);
 
 // ----------------------------------------------------
@@ -185,6 +187,32 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             }
           },
           required: ["errorLogs"]
+        }
+      },
+      {
+        name: "syncflow_export_to_github",
+        description: "Autonomously create a new GitHub branch, commit test assets (Gherkin specs and automation code), and initialize a Pull Request for a given user story.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            story: {
+              type: "string",
+              description: "The User Story or requirement description."
+            },
+            gherkin: {
+              type: "string",
+              description: "The full Gherkin feature text to commit."
+            },
+            code: {
+              type: "string",
+              description: "The automated test source code to commit."
+            },
+            language: {
+              type: "string",
+              description: "The programming language of the test code (TypeScript, Python, or Java)."
+            }
+          },
+          required: ["story", "gherkin", "code", "language"]
         }
       }
     ]
@@ -387,6 +415,90 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           text: responseText
         }]
       };
+    }
+
+    if (name === "syncflow_export_to_github") {
+      const { story, gherkin, code, language } = args as {
+        story: string;
+        gherkin: string;
+        code: string;
+        language: string;
+      };
+
+      const token = process.env.GITHUB_TOKEN;
+      const owner = process.env.GITHUB_OWNER || "pdabholegithub";
+      const repo = process.env.GITHUB_REPO || "specs-ai";
+
+      if (!token || token.includes("your_personal_access_token")) {
+        return {
+          content: [{
+            type: "text",
+            text: "Error: GITHUB_TOKEN is not configured in .env.local. Please add a valid Personal Access Token to use this tool."
+          }],
+          isError: true
+        };
+      }
+
+      console.error(`[SyncFlow MCP] Exporting autonomous PR for: "${story.substring(0, 40)}..."`);
+
+      try {
+        const octokit = new Octokit({ auth: token });
+        const timestamp = Date.now();
+        const branchName = `syncflow/mcp-feature-${timestamp}`;
+        const mainBranch = "main";
+
+        // 1. Get main branch ref
+        const { data: refData } = await octokit.git.getRef({ owner, repo, ref: `heads/${mainBranch}` });
+        const latestCommitSha = refData.object.sha;
+
+        // 2. Create branch
+        await octokit.git.createRef({
+          owner,
+          repo,
+          ref: `refs/heads/${branchName}`,
+          sha: latestCommitSha,
+        });
+
+        // 3. Commit files
+        const fileExtension = language === "TypeScript" ? "spec.ts" : language === "Python" ? "py" : "java";
+        const fileName = `tests/syncflow_mcp_${timestamp}.${fileExtension}`;
+        const gherkinFileName = `tests/syncflow_mcp_${timestamp}.feature`;
+
+        const files = [
+          { path: fileName, content: code, msg: `feat(test): autonomous mcp test for ${story.substring(0, 30)}...` },
+          { path: gherkinFileName, content: gherkin, msg: `feat(spec): autonomous mcp gherkin for ${story.substring(0, 30)}...` }
+        ];
+
+        for (const file of files) {
+          await octokit.repos.createOrUpdateFileContents({
+            owner,
+            repo,
+            path: file.path,
+            message: file.msg,
+            content: Buffer.from(file.content).toString("base64"),
+            branch: branchName,
+          });
+        }
+
+        // 4. Create PR
+        const { data: prData } = await octokit.pulls.create({
+          owner,
+          repo,
+          title: `🤖 [SyncFlow MCP] Autonomous PR: ${story.substring(0, 50)}...`,
+          head: branchName,
+          base: mainBranch,
+          body: `## 🚀 SyncFlow MCP Autonomous Export\nGenerated via local AI Editor MCP Tool.\n\n### Requirement:\n> ${story}\n\n--- \n*Sent from SyncFlow QA Agent Server*`
+        });
+
+        return {
+          content: [{
+            type: "text",
+            text: `✅ SUCCESS: Autonomous Pull Request created successfully!\n\n🔗 PR URL: ${prData.html_url}\n🌿 Branch: ${branchName}`
+          }]
+        };
+      } catch (ghErr: any) {
+        throw new Error(`GitHub API Error: ${ghErr.message}`);
+      }
     }
 
     throw new Error(`Tool "${name}" is not implemented.`);

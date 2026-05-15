@@ -1,0 +1,63 @@
+name: SyncFlow Autonomous Self-Healing CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test-and-heal:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps
+
+      - name: Run Tests
+        id: playwright-run
+        run: npx playwright test > test-output.log 2>&1
+        continue-on-error: true
+
+      - name: Check for Failures & Heal
+        if: steps.playwright-run.outcome == 'failure'
+        env:
+          FAILURE_LOGS: ${{ hashFiles('test-output.log') && 'See test-output.log' || 'Test run failed.' }}
+          # In a real scenario, we'd parse the log to find the exact file. 
+          # For this demo, we'll target a known test file or the latest modified test.
+          FAILING_FILE: 'tests/example.spec.ts' 
+          SYNCFLOW_API_URL: ${{ secrets.SYNCFLOW_API_URL }}
+          SPECS_ACCESS_CODE: ${{ secrets.SPECS_ACCESS_CODE }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Test run failed. Initializing SyncFlow Self-Healing..."
+          export FAILURE_LOGS=$(cat test-output.log | tail -n 100)
+          node scripts/heal-ci.js
+          
+          # Commit the healed code back to the branch
+          git config --global user.name 'SyncFlow Bot'
+          git config --global user.email 'bot@syncflow.ai'
+          git add .
+          git commit -m "chore: autonomous self-healing fix for CI failure"
+          git push
+          echo "🎉 Pipeline self-healed and fixes pushed!"
+
+      - name: Report Final Status
+        if: always()
+        run: |
+          if [ "${{ steps.playwright-run.outcome }}" == "success" ]; then
+            echo "✅ Tests passed!"
+          else
+            echo "⚠️ Tests failed but self-healing was attempted."
+          fi

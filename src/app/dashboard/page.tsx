@@ -39,6 +39,7 @@ export default function Dashboard() {
   const [exportDestination, setExportDestination] = useState<"Jira" | "GitHub" | null>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [exportSuccess, setExportSuccess] = useState(false);
+  const [prUrl, setPrUrl] = useState<string | null>(null);
   
   // Security Access code
   const [accessCode, setAccessCode] = useState("");
@@ -133,17 +134,49 @@ export default function Dashboard() {
     document.body.removeChild(element);
   };
 
-  const triggerExport = (destination: "Jira" | "GitHub") => {
+  const triggerExport = async (destination: "Jira" | "GitHub") => {
     setExportDestination(destination);
     setShowExportModal(true);
     setIsExporting(true);
     setExportSuccess(false);
+    setPrUrl(null);
 
-    // Simulate exporting process
-    setTimeout(() => {
-      setIsExporting(false);
-      setExportSuccess(true);
-    }, 2000);
+    if (destination === "GitHub") {
+      try {
+        const res = await fetch("/api/github/export", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            gherkin,
+            code: playwright ? playwright[language] : "",
+            language,
+            story,
+            accessCode
+          }),
+        });
+
+        const data = await res.json();
+        if (data.success) {
+          setIsExporting(false);
+          setExportSuccess(true);
+          setPrUrl(data.prUrl);
+        } else {
+          setIsExporting(false);
+          alert("GitHub Export Failed: " + (data.error || "Unknown error"));
+          setShowExportModal(false);
+        }
+      } catch (err) {
+        setIsExporting(false);
+        alert("An error occurred during GitHub export.");
+        setShowExportModal(false);
+      }
+    } else {
+      // Jira simulation remains for now
+      setTimeout(() => {
+        setIsExporting(false);
+        setExportSuccess(true);
+      }, 2000);
+    }
   };
 
   return (
@@ -526,9 +559,27 @@ export default function Dashboard() {
                 <p className="text-xs text-center text-gray-500 mt-2">
                   {exportDestination === "Jira" 
                     ? "Sync Flow successfully added 3 Gherkin scenarios to your target Jira story ticket." 
-                    : "Branch 'feature/specsai-test-suite' pushed and draft PR #104 has been initialized."
+                    : `Successfully created a new branch and initialized Pull Request for your test suite.`
                   }
                 </p>
+                
+                {prUrl && (
+                  <div className="mt-4 p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/20 text-center">
+                    <a 
+                      href={prUrl} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-xs text-emerald-400 hover:text-emerald-300 font-bold underline flex items-center justify-center gap-1.5"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                        <polyline points="15 3 21 3 21 9"/>
+                        <line x1="10" y1="14" x2="21" y2="3"/>
+                      </svg>
+                      View Pull Request on GitHub
+                    </a>
+                  </div>
+                )}
                 <button
                   onClick={() => setShowExportModal(false)}
                   className="w-full mt-6 py-2.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-xs font-bold transition-all"
