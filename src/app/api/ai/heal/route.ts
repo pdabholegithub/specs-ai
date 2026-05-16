@@ -113,8 +113,7 @@ export async function POST(req: Request) {
             { type: 'text', text: userPrompt },
             ...(screenshot ? [{ 
               type: 'image' as const, 
-              image: Buffer.from(screenshot, 'base64'),
-              mimeType: 'image/png' 
+              image: Buffer.from(screenshot, 'base64')
             }] : [])
           ]
         }
