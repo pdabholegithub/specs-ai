@@ -13,7 +13,9 @@
 *   **TestRail Integration**: Automatically initialize manual test logs for compliance.
 
 ### 2. 🛡️ CI/CD Self-Healing Core
-*   **Zero-Touch Recovery**: When tests fail in GitHub Actions, SpecsAI diagnoses the failure, patches the locators/code, and commits the fix back to the branch—all without human intervention.
+*   **Visual Multi-Modal Diagnosis**: Unlike standard log-based healing, SpecsAI uses **Vision AI** to analyze failure screenshots. It "sees" UI discrepancies, overlapping elements, and layout shifts to provide high-fidelity patches.
+*   **Secure PR Pattern (HITL)**: Enterprise-safe architecture. The AI never pushes directly to production branches. Instead, it creates a dedicated fix branch and opens a **Verified Draft Pull Request** with a full root-cause analysis for human review.
+*   **Pre-Flight Verification**: Every autonomous fix is automatically re-validated in the CI container. A PR is only generated if the test passes after the AI's patch.
 
 ### 3. 🔌 MCP Intelligence
 *   **IDE Integration**: A standalone MCP server that brings Staff-level QA intelligence directly into your local IDE (Cursor/VS Code).
@@ -57,12 +59,14 @@ npx tsx mcp-server.ts
 SpecsAI operates on a "Living Blueprint" philosophy, ensuring that code is always a direct, validated reflection of requirements.
 
 ```mermaid
-graph LR
+graph TD
     J[Jira Story] --> S[SpecsAI Engine]
     S --> G[GitHub PR]
     G --> C[CI/CD Workflow]
-    C -- Failure --> H[AI Healing]
-    H --> G
+    C -- Failure + Screenshot --> H[AI Healing Core]
+    H --> V[Pre-Flight Verification]
+    V -- Passes --> P[Verified Draft PR]
+    V -- Fails --> X[Human Escalation]
 ```
 
 ---

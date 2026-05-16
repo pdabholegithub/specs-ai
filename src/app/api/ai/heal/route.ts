@@ -1,6 +1,25 @@
 import { google } from '@ai-sdk/google';
 import { generateText } from 'ai';
 import { NextResponse } from 'next/server';
+import fs from 'fs';
+import path from 'path';
+
+// Memory Recall Helper
+function getHistoricalContext() {
+  const historyDir = path.join(process.cwd(), 'src/data/healing-history');
+  if (!fs.existsSync(historyDir)) return "";
+
+  try {
+    const files = fs.readdirSync(historyDir).filter(f => f.endsWith('.json'));
+    const history = files.slice(-5).map(file => {
+      const content = JSON.parse(fs.readFileSync(path.join(historyDir, file), 'utf8'));
+      return `[Past Fix]: ${content.analysis.substring(0, 200)}... (File: ${content.filePath})`;
+    });
+    return history.length > 0 ? "\n--- HISTORICAL CONTEXT (Past Successful Fixes) ---\n" + history.join("\n") : "";
+  } catch (e) {
+    return "";
+  }
+}
 
 // Robust JSON parser helper
 function extractAndParseJson(text: string) {
@@ -39,7 +58,7 @@ function extractAndParseJson(text: string) {
 
 export async function POST(req: Request) {
   try {
-    const { errorLogs, originalCode, filePath, accessCode } = await req.json();
+    const { errorLogs, originalCode, filePath, accessCode, screenshot } = await req.json();
 
     // 1. Security check
     const requiredCode = process.env.SPECS_ACCESS_CODE || "DemoSpecs2026";
@@ -51,13 +70,21 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Missing logs or code for diagnosis." }, { status: 400 });
     }
 
-    console.log(`[CI HEALING] Analyzing failure for file: ${filePath}`);
+    console.log(`[CI HEALING] Analyzing failure for file: ${filePath} (Visual Healing: ${!!screenshot})`);
 
     // 2. AI Diagnosis and Healing
-    const prompt = `
+    const systemInstruction = `
       You are a Staff QA Self-Healing Intelligence Agent.
-      An automated test run in CI/CD has failed. Analyze the logs and code to provide an automated fix.
+      An automated test run in CI/CD has failed. Analyze the logs, code, and optional screenshot to provide an automated fix.
       
+      You MUST return your response as a raw parseable JSON string with these EXACT keys:
+      - "analysis": (string) Markdown description of root cause.
+      - "healedCode": (string) The full, corrected test file source code.
+    `;
+
+    const historyContext = getHistoricalContext();
+
+    const userPrompt = `
       --- TEST FILE PATH ---
       ${filePath}
       
@@ -67,18 +94,31 @@ export async function POST(req: Request) {
       --- CI FAILURE LOGS ---
       ${errorLogs}
       
-      Provide:
-      1. **Analysis**: Why did the test fail?
-      2. **Healed Code**: The full updated, corrected code for the test file.
+      ${historyContext}
       
-      You MUST return your response as a raw parseable JSON string with these EXACT keys:
-      - "analysis": (string) Markdown description of root cause.
-      - "healedCode": (string) The full, corrected test file source code.
+      ${screenshot ? "--- VISUAL SCREENSHOT --- (Attached to this message)" : ""}
+      
+      Analyze the provided data. Use the Historical Context if it contains patterns similar to the current failure.
+      If a screenshot is attached, use it to identify visual discrepancies or UI state issues.
+      Provide the diagnosis and the full corrected code.
     `;
 
     const { text } = await generateText({
-      model: google('gemini-2.5-flash'),
-      prompt: prompt,
+      model: google('gemini-1.5-flash'), // Changed to 1.5 flash for reliable vision support
+      messages: [
+        { role: 'system', content: systemInstruction },
+        { 
+          role: 'user', 
+          content: [
+            { type: 'text', text: userPrompt },
+            ...(screenshot ? [{ 
+              type: 'image' as const, 
+              image: Buffer.from(screenshot, 'base64'),
+              mimeType: 'image/png' 
+            }] : [])
+          ]
+        }
+      ]
     });
 
     const result = extractAndParseJson(text);

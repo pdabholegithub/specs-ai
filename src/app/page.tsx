@@ -16,14 +16,14 @@ export default function Home() {
           </div>
           SpecsAI
         </div>
-        <div className="hidden md:flex items-center gap-8 text-sm font-medium text-gray-400">
-          <a href="#features" className="hover:text-white transition-colors">Features</a>
-          <a href="#how-it-works" className="hover:text-white transition-colors">How it Works</a>
-          <a href="#pricing" className="hover:text-white transition-colors">Pricing</a>
+        <div className="flex items-center gap-4">
+          <Link href="/dashboard/healing" className="hidden lg:block text-sm text-gray-400 hover:text-white transition-colors mr-4">
+            Resilience Center
+          </Link>
+          <Link href="/dashboard" className="px-5 py-2.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/10 text-sm font-medium transition-all backdrop-blur-md">
+            Open Dashboard
+          </Link>
         </div>
-        <Link href="/dashboard" className="px-5 py-2.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/10 text-sm font-medium transition-all backdrop-blur-md">
-          Open Dashboard
-        </Link>
       </nav>
 
       {/* Hero Section */}
@@ -47,12 +47,18 @@ export default function Home() {
           SpecsAI bridges Jira, GitHub, and Playwright. Turn PM user stories into live code specs and automated tests instantly. The single source of truth your team actually uses.
         </p>
         
-        <div className="flex flex-col sm:flex-row gap-3 w-full max-w-md mb-16 justify-center">
+        <div className="flex flex-col sm:flex-row gap-4 w-full max-w-xl mb-16 justify-center">
           <Link 
             href="/dashboard"
-            className="w-full px-8 py-4 rounded-xl bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-semibold shadow-[0_0_40px_rgba(168,85,247,0.4)] transition-all hover:scale-105 active:scale-95 text-center text-lg tracking-wide"
+            className="w-full sm:w-auto px-8 py-4 rounded-xl bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-semibold shadow-[0_0_40px_rgba(168,85,247,0.4)] transition-all hover:scale-105 active:scale-95 text-center text-lg tracking-wide"
           >
             Launch Interactive Demo
+          </Link>
+          <Link 
+            href="/dashboard/healing"
+            className="w-full sm:w-auto px-8 py-4 rounded-xl bg-white/5 hover:bg-white/10 text-white font-semibold border border-white/10 transition-all hover:scale-105 active:scale-95 text-center text-lg tracking-wide backdrop-blur-sm"
+          >
+            Monitor Resilience
           </Link>
         </div>
 

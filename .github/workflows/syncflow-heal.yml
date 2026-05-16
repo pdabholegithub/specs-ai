@@ -27,31 +27,56 @@ jobs:
 
       - name: Run Tests
         id: playwright-run
-        run: npx playwright test > test-output.log 2>&1
+        run: npx playwright test --screenshot=only-on-failure > test-output.log 2>&1
         continue-on-error: true
 
       - name: Check for Failures & Heal
         if: steps.playwright-run.outcome == 'failure'
         env:
           FAILURE_LOGS: ${{ hashFiles('test-output.log') && 'See test-output.log' || 'Test run failed.' }}
-          # In a real scenario, we'd parse the log to find the exact file. 
-          # For this demo, we'll target a known test file or the latest modified test.
-          FAILING_FILE: 'tests/example.spec.ts' 
           SYNCFLOW_API_URL: ${{ secrets.SYNCFLOW_API_URL }}
           SPECS_ACCESS_CODE: ${{ secrets.SPECS_ACCESS_CODE }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "Test run failed. Initializing SyncFlow Self-Healing..."
+          echo "🤖 Test run failed. Initializing SyncFlow Secure Self-Healing..."
+          
+          # 1. Capture logs
           export FAILURE_LOGS=$(cat test-output.log | tail -n 100)
+          
+          # 2. Run Healing Script
           node scripts/heal-ci.js
           
-          # Commit the healed code back to the branch
-          git config --global user.name 'SyncFlow Bot'
-          git config --global user.email 'bot@syncflow.ai'
-          git add .
-          git commit -m "chore: autonomous self-healing fix for CI failure"
-          git push
-          echo "🎉 Pipeline self-healed and fixes pushed!"
+          # 3. Pre-Flight Verification: Re-run tests to verify the fix
+          echo "🔄 Verifying the fix with a second test run..."
+          if npx playwright test; then
+            echo "✅ Fix verified! Tests passed after AI healing."
+            
+            # 4. Create the Secure PR
+            if [ -f "diagnosis.md" ]; then
+              BRANCH_NAME="syncflow/fix-$(date +%Y%m%d-%H%M%S)"
+              
+              git config --global user.name 'SyncFlow Bot'
+              git config --global user.email 'bot@syncflow.ai'
+              
+              git checkout -b $BRANCH_NAME
+              git add .
+              git commit -m "fix(syncflow): verified autonomous patch for CI failure"
+              git push origin $BRANCH_NAME
+              
+              gh pr create \
+                --title "🛡️ SyncFlow: Verified Fix for CI Failure" \
+                --body-file diagnosis.md \
+                --base main \
+                --head $BRANCH_NAME \
+                --draft \
+                --label "ai-healed"
+                
+              echo "🚀 Verified Draft PR created on branch $BRANCH_NAME"
+            fi
+          else
+            echo "❌ AI fix failed verification. No PR created."
+            exit 1
+          fi
 
       - name: Report Final Status
         if: always()
@@ -59,5 +84,5 @@ jobs:
           if [ "${{ steps.playwright-run.outcome }}" == "success" ]; then
             echo "✅ Tests passed!"
           else
-            echo "⚠️ Tests failed but self-healing was attempted."
+            echo "⚠️ CI Failed. SyncFlow Secure PR flow triggered."
           fi
