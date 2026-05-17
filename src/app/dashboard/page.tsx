@@ -45,7 +45,8 @@ export default function Dashboard() {
   const [accessCode, setAccessCode] = useState("");
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("specs_access_code");
+      // P0.2: sessionStorage clears on tab close — safer than localStorage for credentials
+      const saved = sessionStorage.getItem("specs_access_code");
       if (saved) setAccessCode(saved);
     }
   }, []);
@@ -141,14 +142,14 @@ export default function Dashboard() {
     setExportSuccess(false);
     setPrUrl(null);
 
-    if (destination === "GitHub") {
+    if (destination === 'GitHub') {
       try {
-        const res = await fetch("/api/github/export", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
+        const res = await fetch('/api/github/export', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             gherkin,
-            code: playwright ? playwright[language] : "",
+            code: playwright ? playwright[language] : '',
             language,
             story,
             accessCode
@@ -162,20 +163,19 @@ export default function Dashboard() {
           setPrUrl(data.prUrl);
         } else {
           setIsExporting(false);
-          alert("GitHub Export Failed: " + (data.error || "Unknown error"));
+          alert('GitHub Export Failed: ' + (data.error || 'Unknown error'));
           setShowExportModal(false);
         }
       } catch (err) {
         setIsExporting(false);
-        alert("An error occurred during GitHub export.");
+        alert('An error occurred during GitHub export.');
         setShowExportModal(false);
       }
     } else {
-      // Jira simulation remains for now
-      setTimeout(() => {
-        setIsExporting(false);
-        setExportSuccess(true);
-      }, 2000);
+      // Jira direct sync is coming in a future release
+      setIsExporting(false);
+      setShowExportModal(false);
+      alert('📬 Jira Sync is coming soon! For now, the Jira Webhook auto-syncs when you move a ticket to "Ready for QA".');
     }
   };
 
@@ -301,7 +301,7 @@ export default function Dashboard() {
                 value={accessCode}
                 onChange={(e) => {
                   setAccessCode(e.target.value);
-                  localStorage.setItem("specs_access_code", e.target.value);
+                  sessionStorage.setItem("specs_access_code", e.target.value);
                 }}
                 placeholder="Enter access code..."
                 className="w-full bg-[#0a0a0d] border border-white/10 hover:border-white/20 focus:border-orange-500 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-orange-500/30 transition-all placeholder:text-gray-700"

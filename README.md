@@ -34,41 +34,66 @@
 ## 🚀 Quick Start
 
 ### 1. Configure Environment
-Create a `.env.local` file with the following:
+Create a `.env.local` file in the root directory:
 ```bash
-GOOGLE_GENERATIVE_AI_API_KEY=your_key
+# AI Configuration
+GOOGLE_GENERATIVE_AI_API_KEY=your_gemini_api_key
 SPECS_ACCESS_CODE=DemoSpecs2026
-GITHUB_TOKEN=your_pat
+
+# GitHub Configuration (PAT with 'repo' scope)
+GITHUB_TOKEN=ghp_your_personal_access_token
+GITHUB_OWNER=your_github_username
+GITHUB_REPO=your_repository_name
+
+# Jira Configuration
 JIRA_DOMAIN=your-domain.atlassian.net
+JIRA_USER_EMAIL=your-email@example.com
+JIRA_API_TOKEN=your_jira_api_token
 ```
 
-### 2. Run Locally
+### 2. Verify Connectivity
+Run the diagnostic script to ensure all external integrations (Gemini, GitHub, Jira) are correctly authenticated:
+```bash
+node --env-file=.env.local scripts/verify-env.js
+```
+
+### 3. Setup Jira Webhook
+To enable autonomous spec generation, connect Jira to your local/deployed app:
+1.  **Start a Tunnel** (if running locally): `npx localtunnel --port 3000`
+2.  **Go to Jira**: System Settings -> Webhooks.
+3.  **Create Webhook**: 
+    *   **URL**: `https://<your-tunnel-url>/api/webhooks/jira`
+    *   **Events**: Check `Issue: updated`.
+    *   **JQL**: `project = "YOUR_PROJECT_KEY" AND status = "Ready for QA"`
+
+### 4. Run Locally
 ```bash
 npm install
 npm run dev
 ```
 
-### 3. Start MCP Server
+### 5. Start MCP Server
 ```bash
 npx tsx mcp-server.ts
 ```
 
 ---
 
-## 📐 Architecture
+## 📐 Architecture & Workflow
 SpecsAI operates on a "Living Blueprint" philosophy, ensuring that code is always a direct, validated reflection of requirements.
+
+1.  **Requirement Sync**: A Jira Story is moved to "Ready for QA".
+2.  **Autonomous Spec Gen**: The **Architect Agent** reads the requirement, generates Gherkin scenarios and Playwright test code.
+3.  **GitHub Automation**: A new branch is created, and a Draft PR is opened with the new tests.
+4.  **Self-Healing CI**: If a test fails in CI, the **Staff QA Agent** analyzes logs + screenshots and pushes a verified fix.
 
 ```mermaid
 graph TD
-    J[Jira Story] --> S[SpecsAI Engine]
-    S --> G[GitHub PR]
-    G --> C[CI/CD Workflow]
-    C -- Failure + Screenshot --> H[AI Healing Core]
-    H --> V[Pre-Flight Verification]
-    V -- Passes --> P[Verified Draft PR]
+    J[Jira Story: 'Ready for QA'] --> S[Architect Agent]
+    S --> G[GitHub PR: New Test Suite]
+    G --> C[CI/CD Workflow: Test Execution]
+    C -- Failure + Screenshot --> H[Healing Agent]
+    H --> V[Verification Agent: Pre-Flight Run]
+    V -- Passes --> P[Verified Draft PR: Fix]
     V -- Fails --> X[Human Escalation]
 ```
-
----
-
-*Built with ❤️ for the future of Autonomous Engineering.*

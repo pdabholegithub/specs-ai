@@ -33,48 +33,64 @@ jobs:
       - name: Check for Failures & Heal
         if: steps.playwright-run.outcome == 'failure'
         env:
-          FAILURE_LOGS: ${{ hashFiles('test-output.log') && 'See test-output.log' || 'Test run failed.' }}
           SYNCFLOW_API_URL: ${{ secrets.SYNCFLOW_API_URL }}
           SPECS_ACCESS_CODE: ${{ secrets.SPECS_ACCESS_CODE }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
         run: |
           echo "🤖 Test run failed. Initializing SyncFlow Secure Self-Healing..."
-          
-          # 1. Capture logs
+
+          # 1. Capture log output (P0 fix: use actual file content, not hashFiles)
           export FAILURE_LOGS=$(cat test-output.log | tail -n 100)
-          
-          # 2. Run Healing Script
+
+          # 2. Run Healing Script (patches the failing file + saves .syncflow-latest-fix)
           node scripts/heal-ci.js
-          
-          # 3. Pre-Flight Verification: Re-run tests to verify the fix
-          echo "🔄 Verifying the fix with a second test run..."
+
+          # 3. Pre-Flight Verification: Re-run tests
+          echo "🔄 Verifying the fix..."
           if npx playwright test; then
-            echo "✅ Fix verified! Tests passed after AI healing."
-            
-            # 4. Create the Secure PR
+            echo "✅ Fix verified!"
+
+            # 4. Create Secure Draft PR
             if [ -f "diagnosis.md" ]; then
               BRANCH_NAME="syncflow/fix-$(date +%Y%m%d-%H%M%S)"
-              
               git config --global user.name 'SyncFlow Bot'
               git config --global user.email 'bot@syncflow.ai'
-              
               git checkout -b $BRANCH_NAME
               git add .
               git commit -m "fix(syncflow): verified autonomous patch for CI failure"
               git push origin $BRANCH_NAME
-              
-              gh pr create \
+
+              # Capture the PR URL from gh output
+              PR_URL=$(gh pr create \
                 --title "🛡️ SyncFlow: Verified Fix for CI Failure" \
                 --body-file diagnosis.md \
                 --base main \
                 --head $BRANCH_NAME \
                 --draft \
-                --label "ai-healed"
-                
-              echo "🚀 Verified Draft PR created on branch $BRANCH_NAME"
+                --label "ai-healed" 2>&1 | tail -1)
+
+              echo "🚀 Draft PR created: $PR_URL"
+
+              # P1.3: Update the knowledge base JSON with the PR URL
+              if [ -f ".syncflow-latest-fix" ]; then
+                LATEST_JSON=$(cat .syncflow-latest-fix)
+                if [ -f "$LATEST_JSON" ] && [ -n "$PR_URL" ]; then
+                  node -e "
+                    const fs = require('fs');
+                    const data = JSON.parse(fs.readFileSync('$LATEST_JSON', 'utf8'));
+                    data.prUrl = '$PR_URL';
+                    fs.writeFileSync('$LATEST_JSON', JSON.stringify(data, null, 2));
+                    console.log('Knowledge base updated with PR URL.');
+                  "
+                  git add "$LATEST_JSON"
+                  git commit --amend --no-edit
+                  git push -f origin $BRANCH_NAME
+                fi
+              fi
             fi
           else
-            echo "❌ AI fix failed verification. No PR created."
+            echo "❌ AI fix failed verification. No PR created. Escalating to human."
             exit 1
           fi
 
@@ -82,7 +98,7 @@ jobs:
         if: always()
         run: |
           if [ "${{ steps.playwright-run.outcome }}" == "success" ]; then
-            echo "✅ Tests passed!"
+            echo "✅ Tests passed cleanly!"
           else
-            echo "⚠️ CI Failed. SyncFlow Secure PR flow triggered."
+            echo "⚠️ CI Failed. SyncFlow Secure PR flow was triggered."
           fi

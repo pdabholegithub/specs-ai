@@ -67,7 +67,19 @@ export default function Home() {
           <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-transparent to-transparent z-20 h-full w-full bottom-0 top-auto"></div>
           <div className="rounded-2xl border border-white/10 bg-white/5 p-2 backdrop-blur-md shadow-2xl overflow-hidden transform rotateX-[10deg] scale-100 hover:rotate-0 transition-transform duration-700 ease-out">
             <div className="rounded-xl border border-white/10 bg-[#111] overflow-hidden aspect-[16/9] relative flex items-center justify-center">
-               <div className="absolute inset-0 bg-[url('/mockup-placeholder.png')] bg-cover bg-center opacity-80 mix-blend-screen"></div>
+               <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 text-gray-600">
+                 <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-purple-500/20 to-blue-500/20 border border-purple-500/20 flex items-center justify-center">
+                   <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-purple-400">
+                     <path d="m21 16-4 4-4-4"/><path d="M17 20V4"/><path d="m3 8 4-4 4 4"/><path d="M7 4v16"/>
+                   </svg>
+                 </div>
+                 <div className="text-center">
+                   <p className="text-white/50 font-semibold text-sm">SpecsAI Interactive Dashboard</p>
+                   <p className="text-white/25 text-xs mt-1">Click &ldquo;Launch Interactive Demo&rdquo; to see it live</p>
+                 </div>
+               </div>
+               {/* Subtle grid lines for depth */}
+               <div className="absolute inset-0 opacity-10" style={{backgroundImage: 'linear-gradient(rgba(168,85,247,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(168,85,247,0.3) 1px, transparent 1px)', backgroundSize: '40px 40px'}} />
             </div>
           </div>
         </div>

@@ -4,11 +4,15 @@ SpecsAI is powered by a coordinated fleet of specialized AI agents, each designe
 
 ---
 
-## 1. 🏗️ The Architect Agent (Jira-to-Spec)
+## 1. 🏗️ The Architect Agent (Jira-to-PR)
 *   **Role**: Translates ambiguous business requirements into precise technical specifications.
-*   **Input**: Jira Webhooks (Status Changes).
+*   **Input**: Jira Webhook (Status: "Ready for QA").
 *   **Intelligence**: Maps User Stories to Playwright/Selenium test patterns.
-*   **Output**: Functional Test Suites & GitHub Pull Requests.
+*   **Autonomous Action**: 
+    1. Generates Gherkin scenarios.
+    2. Writes Playwright test code.
+    3. **Creates a new branch and Draft PR** in GitHub.
+    4. Posts the summary back to Jira.
 
 ## 2. 🛡️ The Staff QA Healing Agent (Vision-to-Fix)
 This is the "Special Forces" of the SpecsAI engine.
@@ -24,10 +28,10 @@ This is the "Special Forces" of the SpecsAI engine.
 
 ## 3. ⚖️ The Verification Agent (Trust-but-Verify)
 *   **Role**: Ensures quality control for AI-generated code.
-*   **Intelligence**: Executes "Pre-Flight" test runs within the CI container.
+*   **Action**: Executes "Pre-Flight" test runs within the CI container after a healing attempt.
 *   **Security Protocol**:
-    *   Only allows PR creation if the fix is verified to pass.
-    *   Enforces the **Secure PR Pattern** (Draft only, Human-in-the-Loop).
+    *   Only allows PR creation if the fix is verified to pass the re-run.
+    *   Enforces the **Secure PR Pattern** (Draft only, Human-in-the-Loop review).
 
 ---
 

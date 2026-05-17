@@ -480,14 +480,15 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           });
         }
 
-        // 4. Create PR
+        // 4. Create Draft PR (enforces Secure HITL Pattern)
         const { data: prData } = await octokit.pulls.create({
           owner,
           repo,
           title: `🤖 [SyncFlow MCP] Autonomous PR: ${story.substring(0, 50)}...`,
           head: branchName,
           base: mainBranch,
-          body: `## 🚀 SyncFlow MCP Autonomous Export\nGenerated via local AI Editor MCP Tool.\n\n### Requirement:\n> ${story}\n\n--- \n*Sent from SyncFlow QA Agent Server*`
+          draft: true,
+          body: `## 🚀 SyncFlow MCP Autonomous Export\nGenerated via local AI Editor MCP Tool.\n\n### Requirement:\n> ${story}\n\n---\n*Sent from SyncFlow QA Agent Server — Draft PR: Human review required before merge.*`
         });
 
         return {
@@ -496,18 +497,20 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             text: `✅ SUCCESS: Autonomous Pull Request created successfully!\n\n🔗 PR URL: ${prData.html_url}\n🌿 Branch: ${branchName}`
           }]
         };
-      } catch (ghErr: any) {
-        throw new Error(`GitHub API Error: ${ghErr.message}`);
+      } catch (ghErr: unknown) {
+        const msg = ghErr instanceof Error ? ghErr.message : 'Unknown GitHub API error';
+        throw new Error(`GitHub API Error: ${msg}`);
       }
     }
 
     throw new Error(`Tool "${name}" is not implemented.`);
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'An unexpected error occurred.';
     console.error(`[SyncFlow MCP] Error handling tool call "${name}":`, err);
     return {
       content: [{
         type: "text",
-        text: `Execution failed: ${err.message}`
+        text: `Execution failed: ${message}`
       }],
       isError: true
     };
