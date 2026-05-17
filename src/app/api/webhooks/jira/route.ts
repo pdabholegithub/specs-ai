@@ -40,18 +40,19 @@ async function transitionJiraIssue(domain: string, auth: string, issueKey: strin
   }
 }
 
-// P2.6: Send a Slack notification
-async function notifySlack(message: string) {
-  const url = process.env.SLACK_WEBHOOK_URL;
+// P2.6: Send a Discord notification (free & open source alternative to Slack)
+async function notifyDiscord(message: string) {
+  const url = process.env.DISCORD_WEBHOOK_URL;
   if (!url) return;
   try {
     await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text: message })
+      body: JSON.stringify({ content: message }) // Discord uses 'content', not 'text'
     });
+    console.log('[DISCORD NOTIFY] Notification sent.');
   } catch (err: unknown) {
-    console.warn('[SLACK NOTIFY WARN]', err instanceof Error ? err.message : err);
+    console.warn('[DISCORD NOTIFY WARN]', err instanceof Error ? err.message : err);
   }
 }
 
@@ -180,9 +181,9 @@ Return a JSON object with:
       ]);
     }
 
-    // P2.6: Slack notification on successful PR creation
+    // P2.6: Discord notification on successful PR creation
     if (prUrl) {
-      await notifySlack(`🤖 *SyncFlow* created a Draft PR for *${issueKey}* (${status}):\n🔗 ${prUrl}`);
+      await notifyDiscord(`🤖 **SyncFlow** created a Draft PR for **${issueKey}** (${status}):\n🔗 ${prUrl}`);
     }
 
     return NextResponse.json({ success: true, issue: issueKey, generated: true, prUrl });

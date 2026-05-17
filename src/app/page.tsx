@@ -64,22 +64,22 @@ export default function Home() {
 
         {/* Dashboard Mockup Frame */}
         <div className="w-full relative mt-10 perspective-[2000px]">
-          <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-transparent to-transparent z-20 h-full w-full bottom-0 top-auto"></div>
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-2 backdrop-blur-md shadow-2xl overflow-hidden transform rotateX-[10deg] scale-100 hover:rotate-0 transition-transform duration-700 ease-out">
-            <div className="rounded-xl border border-white/10 bg-[#111] overflow-hidden aspect-[16/9] relative flex items-center justify-center">
-               <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 text-gray-600">
-                 <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-purple-500/20 to-blue-500/20 border border-purple-500/20 flex items-center justify-center">
-                   <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-purple-400">
-                     <path d="m21 16-4 4-4-4"/><path d="M17 20V4"/><path d="m3 8 4-4 4 4"/><path d="M7 4v16"/>
-                   </svg>
-                 </div>
-                 <div className="text-center">
-                   <p className="text-white/50 font-semibold text-sm">SpecsAI Interactive Dashboard</p>
-                   <p className="text-white/25 text-xs mt-1">Click &ldquo;Launch Interactive Demo&rdquo; to see it live</p>
-                 </div>
-               </div>
-               {/* Subtle grid lines for depth */}
-               <div className="absolute inset-0 opacity-10" style={{backgroundImage: 'linear-gradient(rgba(168,85,247,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(168,85,247,0.3) 1px, transparent 1px)', backgroundSize: '40px 40px'}} />
+          {/* Bottom fade overlay */}
+          <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-[#0a0a0a] to-transparent z-20 pointer-events-none" />
+          {/* Glow behind image */}
+          <div className="absolute inset-0 bg-purple-600/20 rounded-3xl blur-3xl scale-95 z-0" />
+          <div className="relative z-10 rounded-2xl border border-white/10 bg-white/5 p-2 backdrop-blur-md shadow-2xl overflow-hidden hover:scale-[1.01] transition-transform duration-700 ease-out">
+            <div className="rounded-xl border border-purple-500/20 overflow-hidden relative">
+              <Image
+                src="/mockup-placeholder.png"
+                alt="SpecsAI — AI-Powered SDLC Architecture Diagram showing Jira, GitHub, Playwright integration"
+                width={1200}
+                height={800}
+                className="w-full h-auto object-cover"
+                priority
+              />
+              {/* Subtle purple tint overlay for brand cohesion */}
+              <div className="absolute inset-0 bg-gradient-to-tr from-purple-900/20 via-transparent to-blue-900/10 pointer-events-none" />
             </div>
           </div>
         </div>
@@ -139,6 +139,33 @@ export default function Home() {
               <p className="text-gray-400 leading-relaxed relative z-10">{item.desc}</p>
             </div>
           ))}
+        </div>
+
+        {/* Autonomous Flow Visualization */}
+        <div className="mt-20 relative">
+          <div className="text-center mb-10">
+            <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 text-xs font-semibold uppercase tracking-wider">
+              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 inline-block" />
+              Autonomous SDLC Loop
+            </span>
+            <h3 className="text-2xl md:text-3xl font-extrabold mt-4 mb-2">The Zero-Touch Engineering Loop</h3>
+            <p className="text-gray-400 text-sm max-w-md mx-auto">Jira → AI → GitHub → Playwright → Self-Heal. Fully autonomous, end-to-end.</p>
+          </div>
+          {/* Glow */}
+          <div className="absolute inset-0 bg-cyan-600/10 rounded-3xl blur-3xl scale-95 z-0 pointer-events-none" />
+          <div className="relative z-10 rounded-2xl border border-cyan-500/20 bg-white/[0.02] p-2 backdrop-blur-md shadow-2xl overflow-hidden hover:scale-[1.01] transition-transform duration-700 ease-out">
+            <div className="rounded-xl overflow-hidden relative">
+              <Image
+                src="/specsai-flow.png"
+                alt="SpecsAI Autonomous SDLC Flow — Jira to GitHub to Playwright self-healing loop"
+                width={1400}
+                height={900}
+                className="w-full h-auto object-cover"
+              />
+              {/* Tint overlay */}
+              <div className="absolute inset-0 bg-gradient-to-tr from-cyan-900/15 via-transparent to-purple-900/10 pointer-events-none" />
+            </div>
+          </div>
         </div>
       </section>
 
